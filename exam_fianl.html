@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Exam System: Fixed Timer & UI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text-main: #1f293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 80px;
+        }
+
+        /* --- NAVIGATION --- */
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 1000;
+            padding: 12px 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .nav-inner {
+            max-width: 1000px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        
+        .role-switch {
+            background: #f1f5f9; padding: 4px; border-radius: 8px; display: flex; gap: 4px;
+        }
+        .role-btn {
+            border: none; background: transparent; padding: 8px 12px;
+            font-size: 0.9rem; font-weight: 600; color: var(--text-sub);
+            border-radius: 6px; cursor: pointer; transition: all 0.2s;
+        }
+        .role-btn.active { background: white; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* --- LAYOUT --- */
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+        .hidden { display: none !important; }
+
+        /* --- CARDS & GRID --- */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--surface); border-radius: 12px;
+            padding: 20px; border: 1px solid var(--border);
+            box-shadow: var(--shadow); transition: transform 0.2s;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- ADMIN UI ELEMENTS --- */
+        .admin-header-bar {
+            background: #1e293b; color: white; padding: 15px 20px; border-radius: 10px;
+            margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .option-row-admin {
+            display: flex; align-items: center; gap: 8px; margin-top: 8px;
+            background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border);
+        }
+
+        input[type="text"], input[type="number"] {
+            border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px;
+            width: 100%; outline: none; font-size: 0.95rem;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); }
+
+        /* --- STUDENT UI ELEMENTS --- */
+        .sticky-status {
+            position: sticky; top: 70px; z-index: 900;
+            background: var(--surface); padding: 10px 15px; border-radius: 10px;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        
+        .progress-container {
+            height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 8px;
+        }
+        .progress-bar {
+            height: 100%; background: var(--success); width: 0%; transition: width 0.3s ease;
+        }
+
+        .timer-badge {
+            background: #fee2e2; color: #dc2626; font-weight: 700;
+            padding: 5px 12px; border-radius: 20px; font-variant-numeric: tabular-nums;
+        }
+
+        /* Student Question Card */
+        .question-card {
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .option-label {
+            display: flex; align-items: center; padding: 15px; margin-top: 10px;
+            border: 2px solid var(--border); border-radius: 10px;
+            cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .option-label:active { transform: scale(0.98); }
+        .option-label:hover { background: #f8fafc; border-color: #94a3b8; }
+        
+        /* Selected State */
+        .option-label:has(input:checked) {
+            background: #eef2ff; border-color: var(--primary);
+        }
+        .option-label input {
+            width: 20px; height: 20px; margin-right: 15px; accent-color: var(--primary);
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            display: inline-flex; justify-content: center; align-items: center;
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-outline { background: white; border: 1px solid #cbd5e1; color: var(--text-main); }
+        .btn-add { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; margin-top: 20px; }
+        
+        .nav-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+        /* --- RESPONSIVE FIXES --- */
+        @media (max-width: 600px) {
+            .nav-inner { flex-direction: column; gap: 10px; }
+            .role-switch { width: 100%; justify-content: center; }
+            .role-btn { flex: 1; text-align: center; }
+            
+            .sticky-status { top: 110px; } /* Adjust for taller nav */
+            .admin-grid { grid-template-columns: 1fr; } /* Stack cards */
+            
+            .nav-actions { flex-direction: column-reverse; } /* Stack buttons */
+        }
+
+        /* --- RESULT MODAL --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .modal-box {
+            background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px;
+            text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-inner">
+            <div class="logo">⚡ SmartExam <span style="font-size:0.8rem; background:#e0e7ff; padding:2px 6px; border-radius:4px;">PRO</span></div>
+            <div class="role-switch">
+                <button class="role-btn active" onclick="switchRole('admin')" id="nav-admin">Админ (Засах)</button>
+                <button class="role-btn" onclick="switchRole('student')" id="nav-student">Шалгуулагч</button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="view-admin" class="container">
+        
+        <div class="admin-header-bar">
+            <div>
+                <strong>Асуултын Сан</strong>
+                <div style="font-size:0.85rem; opacity:0.8;">Нийт асуулт: <span id="q-count">0</span></div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.8rem;">Макс Оноо</div>
+                <div style="font-size:1.2rem; font-weight:bold; color:#4ade80;" id="admin-max-score">0</div>
+            </div>
+        </div>
+
+        <div id="admin-grid" class="admin-grid">
+            </div>
+
+        <button class="btn btn-add" onclick="addNewQuestion()">+ Шинэ Асуулт Нэмэх</button>
+        <div style="height: 30px;"></div> </div>
+
+    <div id="view-student" class="container hidden">
+        
+        <div class="sticky-status">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong>Хуудас:</strong> <span id="page-display">1 / 1</span>
+                </div>
+                <div class="timer-badge">
+                    ⏳ <span id="timer-text">40:00</span>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="exam-progress"></div>
+            </div>
+        </div>
+
+        <div id="student-questions-area">
+            </div>
+
+        <div class="nav-actions">
+            <button class="btn btn-outline" id="btn-prev" onclick="changePage(-1)">← Буцах</button>
+            <button class="btn btn-primary" id="btn-next" onclick="changePage(1)">Дараагийнх →</button>
+            <button class="btn btn-primary hidden" id="btn-finish" onclick="finishExam()" style="background:var(--success);">✅ Шалгалтыг Дуусгах</button>
+        </div>
+    </div>
+
+    <div id="modal-result" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div style="font-size:4rem; margin-bottom:10px;">🏆</div>
+            <h2 style="margin:0 0 10px 0;">Үр Дүн</h2>
+            <p style="color:var(--text-sub);">Таны гүйцэтгэл:</p>
+            
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:20px; border-radius:12px; margin:20px 0;">
+                <div style="font-size:3rem; font-weight:800; color:var(--success); line-height:1;">
+                    <span id="res-score">0</span>
+                </div>
+                <div style="color:#166534; font-size:0.9rem; margin-top:5px;">
+                    Нийт <span id="res-max">0</span> онооноос
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="location.reload()">Дахин эхлэх</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DATA ---
+        let examData = [
+            {
+                id: 1, type: 'single', points: 2,
+                question: "Монгол улсын нийслэл хот?",
+                options: [
+                    {text: "Дархан", value: 0, isCorrect: false},
+                    {text: "Улаанбаатар", value: 0, isCorrect: true},
+                    {text: "Эрдэнэт", value: 0, isCorrect: false}
+                ]
+            },
+            {
+                id: 2, type: 'multi', points: 0,
+                question: "Аль нь Web Browser вэ? (Олон сонголт, оноотой)",
+                options: [
+                    {text: "Google Chrome (2 оноо)", value: 2, isCorrect: true},
+                    {text: "Windows (0 оноо)", value: 0, isCorrect: false},
+                    {text: "Firefox (2 оноо)", value: 2, isCorrect: true}
+                ]
+            }
+        ];
+
+        // Fill Data for Pagination Test
+        for(let i=3; i<=12; i++) {
+            examData.push({
+                id: i, type: 'single', points: 2,
+                question: `Асуулт ${i}: Туршилтын асуулт`,
+                options: [{text: "Зөв Хариулт", value: 0, isCorrect: true}, {text: "Буруу Хариулт", value: 0, isCorrect: false}]
+            });
+        }
+
+        // --- 2. GLOBAL STATE ---
+        let currentPage = 0;
+        const perPage = 5;
+        let timerInterval;
+        let timeLeft = 40 * 60; // 40 minutes
+
+        // --- 3. ADMIN FUNCTIONS ---
+        function renderAdmin() {
+            const container = document.getElementById('admin-grid');
+            container.innerHTML = '';
+            let totalMax = 0;
+
+            examData.forEach((q, qIdx) => {
+                // Calculate Max
+                let qMax = 0;
+                if(q.type === 'single') qMax = q.points;
+                else q.options.forEach(o => qMax += o.value);
+                totalMax += qMax;
+
+                // Render Options
+                let optionsHTML = '';
+                q.options.forEach((opt, oIdx) => {
+                    let controlHTML = '';
+                    if(q.type === 'single') {
+                        // Radio for Single Choice Correctness
+                        controlHTML = `
+                            <label style="font-size:0.8rem; display:flex; align-items:center; cursor:pointer; color:${opt.isCorrect ? '#16a34a':'#64748b'}; font-weight:bold;">
+                                <input type="radio" name="adm_corr_${qIdx}" ${opt.isCorrect?'checked':''} onchange="setCorrect(${qIdx}, ${oIdx})"> Зөв
+                            </label>
+                        `;
+                    } else {
+                        // Input for Multi Choice Score
+                        controlHTML = `
+                            <input type="number" value="${opt.value}" style="width:50px; padding:4px;" placeholder="Pts" onchange="updateOptVal(${qIdx}, ${oIdx}, this.value)">
+                        `;
+                    }
+
+                    optionsHTML += `
+                        <div class="option-row-admin">
+                            <input type="text" value="${opt.text}" style="border:none; background:transparent; flex:1;" onchange="updateOptText(${qIdx}, ${oIdx}, this.value)">
+                            ${controlHTML}
+                            <button onclick="deleteOption(${qIdx}, ${oIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.1rem;">×</button>
+                        </div>
+                    `;
+                });
+
+                // Question Points Input
+                const pointsInput = q.type === 'single' 
+                    ? `<input type="number" value="${q.points}" style="width:50px; text-align:center;" onchange="updateQPoints(${qIdx}, this.value)">` 
+                    : `<span style="font-size:0.8rem; color:#64748b;">Нийлбэр: ${qMax}</span>`;
+
+                container.innerHTML += `
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <div style="font-weight:bold; color:var(--primary);">#${qIdx+1}</div>
+                            <select onchange="updateType(${qIdx}, this.value)" style="border:1px solid #ddd; border-radius:4px; font-size:0.8rem;">
+                                <option value="single" ${q.type==='single'?'selected':''}>Нэг сонголт</option>
+                                <option value="multi" ${q.type==='multi'?'selected':''}>Олон сонголт</option>
+                            </select>
+                        </div>
+                        
+                        <input type="text" value="${q.question}" style="font-weight:600; margin-bottom:10px;" onchange="updateQText(${qIdx}, this.value)">
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:0.9rem;">
+                            <span>Асуултын оноо:</span>
+                            ${pointsInput}
+                        </div>
+
+                        <div style="flex:1; margin-bottom:10px;">
+                            ${optionsHTML}
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-top:auto;">
+                            <button class="btn btn-outline" style="padding:5px; font-size:0.8rem;" onclick="addOption(${qIdx})">+ Хариулт</button>
+                            <button class="btn btn-outline" style="padding:5px; font-size:0.8rem; color:var(--danger); border-color:var(--danger);" onclick="deleteQuestion(${qIdx})">Устгах</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('admin-max-score').innerText = totalMax;
+            document.getElementById('q-count').innerText = examData.length;
+        }
+
+        // --- ADMIN DATA UPDATERS ---
+        function setCorrect(qIdx, oIdx) {
+            examData[qIdx].options.forEach((o, i) => o.isCorrect = (i === oIdx));
+            renderAdmin();
+        }
+        function updateType(idx, val) {
+            examData[idx].type = val;
+            examData[idx].options.forEach(o => { o.value = 0; o.isCorrect = false; }); // Reset logic
+            renderAdmin();
+        }
+        function updateQText(idx, val) { examData[idx].question = val; }
+        function updateQPoints(idx, val) { examData[idx].points = parseInt(val) || 0; renderAdmin(); }
+        function updateOptText(qIdx, oIdx, val) { examData[qIdx].options[oIdx].text = val; }
+        function updateOptVal(qIdx, oIdx, val) { examData[qIdx].options[oIdx].value = parseInt(val) || 0; renderAdmin(); }
+        
+        function addNewQuestion() {
+            examData.push({id: Date.now(), type: 'single', points: 1, question: "Шинэ асуулт", options: [{text: "Хариулт...", value: 0, isCorrect: false}]});
+            renderAdmin();
+        }
+        function deleteQuestion(idx) { if(confirm("Устгах уу?")) { examData.splice(idx, 1); renderAdmin(); }}
+        function addOption(qIdx) { examData[qIdx].options.push({text: "...", value: 0, isCorrect: false}); renderAdmin(); }
+        function deleteOption(qIdx, oIdx) { examData[qIdx].options.splice(oIdx, 1); renderAdmin(); }
+
+        // --- 4. STUDENT FUNCTIONS ---
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 40 * 60; // Reset
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    finishExam();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            const text = `${m}:${s < 10 ? '0'+s : s}`;
+            const el = document.getElementById('timer-text');
+            el.innerText = text;
+            
+            // Warning color
+            if(timeLeft < 300) el.style.color = 'red'; 
+            else el.style.color = '#dc2626';
+        }
+
+        function renderStudent() {
+            const container = document.getElementById('student-questions-area');
+            container.innerHTML = '';
+            
+            const totalPages = Math.ceil(examData.length / perPage);
+            const start = currentPage * perPage;
+            const end = start + perPage;
+            const pageData = examData.slice(start, end);
+
+            // Update Progress Bar
+            const progress = ((currentPage + 1) / totalPages) * 100;
+            document.getElementById('exam-progress').style.width = `${progress}%`;
+            document.getElementById('page-display').innerText = `${currentPage + 1} / ${totalPages}`;
+
+            // Buttons Logic
+            document.getElementById('btn-prev').disabled = (currentPage === 0);
+            if(currentPage === totalPages - 1) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-finish').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-finish').classList.add('hidden');
+            }
+
+            // Render Page Questions
+            pageData.forEach((q, idx) => {
+                const realIdx = start + idx;
+                const inputType = q.type === 'single' ? 'radio' : 'checkbox';
+                const badge = q.type === 'single' ? 'Нэг Сонголт' : 'Олон Сонголт';
+                const badgeColor = q.type === 'single' ? '#dbeafe' : '#fce7f3';
+                const badgeText = q.type === 'single' ? '#1e40af' : '#9d174d';
+
+                let optionsHTML = '';
+                q.options.forEach((opt, oIdx) => {
+                    optionsHTML += `
+                        <label class="option-label">
+                            <input type="${inputType}" name="sq_${realIdx}" value="${oIdx}">
+                            <span>${opt.text}</span>
+                        </label>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="question-card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <strong style="color:var(--primary);">Асуулт ${realIdx + 1}</strong>
+                            <span style="background:${badgeColor}; color:${badgeText}; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">${badge}</span>
+                        </div>
+                        <p style="font-weight:500; font-size:1.05rem;">${q.question}</p>
+                        <div>${optionsHTML}</div>
+                    </div>
+                `;
+            });
+            window.scrollTo(0, 0);
+        }
+
+        function changePage(dir) {
+            currentPage += dir;
+            renderStudent();
+        }
+
+        function finishExam() {
+            clearInterval(timerInterval);
+            
+            let totalScore = 0;
+            let maxPossible = 0;
+
+            examData.forEach((q, idx) => {
+                // Calc Max
+                if(q.type === 'single') maxPossible += q.points;
+                else q.options.forEach(o => maxPossible += o.value);
+
+                // Calc User Score
+                const inputs = document.querySelectorAll(`input[name="sq_${idx}"]:checked`);
+                if(q.type === 'single') {
+                    if(inputs.length > 0) {
+                        const sel = parseInt(inputs[0].value);
+                        if(q.options[sel].isCorrect) totalScore += q.points;
+                    }
+                } else {
+                    inputs.forEach(inp => {
+                        const sel = parseInt(inp.value);
+                        totalScore += q.options[sel].value;
+                    });
+                }
+            });
+
+            document.getElementById('res-score').innerText = totalScore;
+            document.getElementById('res-max').innerText = maxPossible;
+            document.getElementById('modal-result').classList.remove('hidden');
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function switchRole(role) {
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('nav-'+role).classList.add('active');
+            
+            document.getElementById('view-admin').classList.add('hidden');
+            document.getElementById('view-student').classList.add('hidden');
+            document.getElementById('view-'+role).classList.remove('hidden');
+
+            if(role === 'admin') {
+                clearInterval(timerInterval);
+                renderAdmin();
+            }
+            if(role === 'student') {
+                currentPage = 0;
+                renderStudent();
+                startTimer(); // Fixed: Timer starts automatically
+            }
+        }
+
+        // Init
+        renderAdmin();
+
+    </script>
+</body>
+</html>
