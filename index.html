@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="mn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Автомат Түвшин Тогтоох Шалгалт (Харгалзуулах нэмэлттэй)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            user-select: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen" oncontextmenu="return false;">
+
+    <div id="app" class="max-w-4xl mx-auto p-4">
+
+        <div id="view-dashboard" class="fade-in">
+            <header class="mb-8 text-center">
+                <h1 class="text-3xl font-bold text-blue-700">Шалгалт Бэлтгэх Систем</h1>
+                <p class="text-gray-500">v3.0 - Харгалзуулах дасгалтай</p>
+            </header>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 cursor-pointer hover:shadow-lg transition" onclick="startPresetExam()">
+                    <h2 class="text-xl font-bold text-gray-800">Системийн Бэлэн Шалгалт</h2>
+                    <p class="text-sm text-gray-600 mt-2">Засварлах боломжгүй, бэлэн загвар.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500 cursor-pointer hover:shadow-lg transition" onclick="goToCustomEditor()">
+                    <h2 class="text-xl font-bold text-gray-800">Админ Зохиох Шалгалт</h2>
+                    <p class="text-sm text-gray-600 mt-2">Харгалзуулах, Сонгох дасгал бүхий бүрэн тохиргоо.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-editor" class="hidden fade-in pb-20">
+            <div class="sticky top-0 z-20 bg-white/95 backdrop-blur shadow-md p-4 rounded-b-xl flex justify-between items-center mb-6 border border-gray-200">
+                <button onclick="showView('view-dashboard')" class="text-gray-500 hover:text-gray-700 font-semibold">← Буцах</button>
+                <div class="text-lg font-bold text-green-700 bg-green-50 px-4 py-1 rounded-full border border-green-200">
+                    Нийт оноо: <span id="admin-total-score">0</span>
+                </div>
+                <button onclick="startCustomExam()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 shadow hover:shadow-lg transition">
+                    Нийтлэх & Эхлүүлэх
+                </button>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4 text-gray-800 pl-1 border-l-4 border-purple-500">Асуулт Зохиох</h2>
+
+            <div id="question-editor-container" class="space-y-6"></div>
+
+            <button onclick="addNewQuestion()" class="mt-8 w-full border-2 border-dashed border-purple-300 text-purple-600 font-bold py-4 rounded-xl hover:bg-purple-50 hover:border-purple-400 transition flex items-center justify-center gap-2">
+                <span class="text-2xl">+</span> Шинэ асуулт нэмэх
+            </button>
+        </div>
+
+        <div id="view-exam" class="hidden fade-in select-none">
+            <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm">
+                <div>
+                    <h2 class="font-bold text-gray-700">Шалгалт</h2>
+                    <div class="w-48 bg-gray-200 rounded-full h-2.5 mt-2">
+                        <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-500">Үлдсэн хугацаа</p>
+                    <div id="timer-display" class="text-2xl font-mono font-bold text-red-600">--:--</div>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md min-h-[300px] flex flex-col justify-between">
+                <div>
+                    <span id="q-type-badge" class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded uppercase mb-2 inline-block">Type</span>
+                    <h3 id="q-text" class="text-xl font-semibold text-gray-900 mb-6">Question...</h3>
+
+                    <div id="q-content-area" class="space-y-4"></div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button onclick="nextQuestion()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg transform transition hover:-translate-y-1">
+                        Дараагийнх →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-result" class="hidden fade-in text-center pt-10">
+            <div class="bg-white p-10 rounded-2xl shadow-xl max-w-lg mx-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Шалгалт Дууслаа!</h2>
+                <div class="bg-blue-50 p-6 rounded-xl mb-6 mt-6">
+                    <p class="text-sm text-gray-500 uppercase">Таны түвшин</p>
+                    <h1 id="result-level" class="text-5xl font-extrabold text-blue-700 my-2">--</h1>
+                    <p id="result-score" class="text-gray-700 font-semibold">-- / --</p>
+                </div>
+                <button onclick="location.reload()" class="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900">Эхлэл рүү буцах</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA STRUCTURE ---
+        // New structure supports 'pairs' for matching questions
+        const defaultQuestions = [{
+            id: 1,
+            type: 'radio',
+            text: "Монгол улсын нийслэл?",
+            options: ["Эрдэнэт", "Улаанбаатар", "Дархан"],
+            correct: 1,
+            score: 2,
+            pairs: []
+        }, {
+            id: 2,
+            type: 'matching',
+            text: "Улсуудыг нийслэлтэй нь холбоно уу.",
+            options: [],
+            correct: null,
+            score: 4,
+            pairs: [{
+                left: "Монгол",
+                right: "Улаанбаатар"
+            }, {
+                left: "Франц",
+                right: "Парис"
+            }, {
+                left: "Япон",
+                right: "Токио"
+            }]
+        }];
+
+        let editingQuestions = [];
+        let activeExamQuestions = [];
+
+        let currentQIndex = 0;
+        let userScore = 0;
+        let totalExamScore = 0;
+        let timerInterval;
+        let timeLeft = 2400;
+
+        function showView(id) {
+            document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // --- EDITOR LOGIC ---
+
+        function goToCustomEditor() {
+            if (editingQuestions.length === 0) {
+                editingQuestions = JSON.parse(JSON.stringify(defaultQuestions));
+            }
+            renderEditor();
+            showView('view-editor');
+        }
+
+        function addNewQuestion() {
+            const newQ = {
+                id: Date.now(),
+                type: 'radio', // default
+                text: '',
+                options: ['Сонголт 1', 'Сонголт 2'],
+                correct: 0,
+                score: 1,
+                pairs: [{
+                    left: "Үг A",
+                    right: "Хариу A"
+                }, {
+                    left: "Үг B",
+                    right: "Хариу B"
+                }]
+            };
+            editingQuestions.push(newQ);
+            renderEditor();
+            setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 100);
+        }
+
+        function deleteQuestion(index) {
+            if (confirm("Устгах уу?")) {
+                editingQuestions.splice(index, 1);
+                renderEditor();
+            }
+        }
+
+        function renderEditor() {
+            const container = document.getElementById('question-editor-container');
+            container.innerHTML = '';
+            let totalScore = 0;
+
+            editingQuestions.forEach((q, qIndex) => {
+                totalScore += parseInt(q.score) || 0;
+
+                // Render Content based on Type
+                let contentHTML = '';
+
+                if (q.type === 'matching') {
+                    // --- MATCHING EDITOR UI ---
+                    let pairsHTML = '';
+                    q.pairs.forEach((pair, pIndex) => {
+                        pairsHTML += `
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-gray-400 font-bold">${pIndex + 1}.</span>
+                                <input type="text" value="${pair.left}" oninput="updatePair(this.value, ${qIndex}, ${pIndex}, 'left')" class="flex-1 border p-2 rounded bg-gray-50" placeholder="Зүүн тал (Асуулт)">
+                                <span class="text-gray-400">↔</span>
+                                <input type="text" value="${pair.right}" oninput="updatePair(this.value, ${qIndex}, ${pIndex}, 'right')" class="flex-1 border p-2 rounded bg-blue-50" placeholder="Баруун тал (Зөв хариу)">
+                                <button onclick="removePair(${qIndex}, ${pIndex})" class="text-red-400 hover:text-red-600 font-bold px-2">×</button>
+                            </div>
+                        `;
+                    });
+                    contentHTML = `
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Харгалзуулах хосууд (Зүүн - Баруун)</label>
+                            ${pairsHTML}
+                            <button onclick="addPair(${qIndex})" class="mt-2 text-sm text-blue-600 font-semibold hover:underline">+ Хос нэмэх</button>
+                        </div>
+                    `;
+                } else {
+                    // --- CHOICE EDITOR UI ---
+                    let optionsHTML = '';
+                    q.options.forEach((opt, optIndex) => {
+                        const isChecked = (q.type === 'radio' && q.correct === optIndex) || (q.type === 'checkbox' && Array.isArray(q.correct) && q.correct.includes(optIndex));
+                        const markerColor = isChecked ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300';
+                        optionsHTML += `
+                            <div class="flex items-center gap-2 mb-2">
+                                <div onclick="setCorrectOption(${qIndex}, ${optIndex})" class="w-6 h-6 rounded-full border-2 cursor-pointer flex items-center justify-center ${markerColor} text-white text-xs">✔</div>
+                                <input type="text" value="${opt}" oninput="updateOptionText(${qIndex}, ${optIndex}, this.value)" class="flex-1 border p-2 rounded text-sm" placeholder="Хариулт...">
+                                <button onclick="removeOption(${qIndex}, ${optIndex})" class="text-red-400 hover:text-red-600 font-bold px-2">×</button>
+                            </div>
+                        `;
+                    });
+                    contentHTML = `
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Хариултууд (Зөв хариуг тэмдэглэнэ үү)</label>
+                            ${optionsHTML}
+                            <button onclick="addOption(${qIndex})" class="mt-2 text-sm text-blue-600 font-semibold hover:underline">+ Хариулт нэмэх</button>
+                        </div>
+                    `;
+                }
+
+                const html = `
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 relative group">
+                        <button onclick="deleteQuestion(${qIndex})" class="absolute top-4 right-4 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition">Устгах 🗑️</button>
+                        <div class="flex gap-4 mb-4">
+                            <div class="w-1/3">
+                                <label class="text-xs font-bold text-gray-500 uppercase block mb-1">Төрөл</label>
+                                <select onchange="updateQuestionType(${qIndex}, this.value)" class="w-full border p-2 rounded bg-gray-50">
+                                    <option value="radio" ${q.type === 'radio' ? 'selected' : ''}>Нэг сонголт (Radio)</option>
+                                    <option value="checkbox" ${q.type === 'checkbox' ? 'selected' : ''}>Олон сонголт (Checkbox)</option>
+                                    <option value="matching" ${q.type === 'matching' ? 'selected' : ''}>Харгалзуулах (Matching)</option>
+                                </select>
+                            </div>
+                            <div class="w-1/4">
+                                <label class="text-xs font-bold text-gray-500 uppercase block mb-1">Оноо</label>
+                                <input type="number" min="1" value="${q.score}" oninput="updateScore(${qIndex}, this.value)" class="w-full border p-2 rounded text-center font-bold text-blue-600">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="text-xs font-bold text-gray-500 uppercase block mb-1">Асуулт</label>
+                            <input type="text" value="${q.text}" oninput="updateQuestionText(${qIndex}, this.value)" class="w-full border p-2 rounded font-medium text-lg focus:ring-2 ring-blue-100 outline-none" placeholder="Асуултаа энд бичнэ үү...">
+                        </div>
+                        ${contentHTML}
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+
+            document.getElementById('admin-total-score').innerText = totalScore;
+        }
+
+        // --- UPDATE FUNCTIONS ---
+        function updateQuestionText(qIndex, val) {
+            editingQuestions[qIndex].text = val;
+        }
+
+        function updateScore(qIndex, val) {
+            editingQuestions[qIndex].score = parseInt(val) || 0;
+            renderEditor(); // Refresh total
+        }
+
+        function updateQuestionType(qIndex, val) {
+            editingQuestions[qIndex].type = val;
+            renderEditor();
+        }
+
+        // Choice Helpers
+        function updateOptionText(qIndex, optIndex, val) {
+            editingQuestions[qIndex].options[optIndex] = val;
+        }
+
+        function addOption(qIndex) {
+            editingQuestions[qIndex].options.push("");
+            renderEditor();
+        }
+
+        function removeOption(qIndex, optIndex) {
+            editingQuestions[qIndex].options.splice(optIndex, 1);
+            renderEditor();
+        }
+
+        function setCorrectOption(qIndex, optIndex) {
+            const q = editingQuestions[qIndex];
+            if (q.type === 'radio') q.correct = optIndex;
+            else {
+                if (!Array.isArray(q.correct)) q.correct = [];
+                const idx = q.correct.indexOf(optIndex);
+                if (idx > -1) q.correct.splice(idx, 1);
+                else q.correct.push(optIndex);
+            }
+            renderEditor();
+        }
+
+        // Matching Helpers
+        function updatePair(val, qIndex, pIndex, side) {
+            editingQuestions[qIndex].pairs[pIndex][side] = val;
+        }
+
+        function addPair(qIndex) {
+            editingQuestions[qIndex].pairs.push({
+                left: "",
+                right: ""
+            });
+            renderEditor();
+        }
+
+        function removePair(qIndex, pIndex) {
+            editingQuestions[qIndex].pairs.splice(pIndex, 1);
+            renderEditor();
+        }
+
+        // --- EXAM LOGIC ---
+
+        function startPresetExam() {
+            activeExamQuestions = JSON.parse(JSON.stringify(defaultQuestions));
+            initExam();
+        }
+
+        function startCustomExam() {
+            if (editingQuestions.length === 0) {
+                alert("Асуулт байхгүй байна!");
+                return;
+            }
+            activeExamQuestions = JSON.parse(JSON.stringify(editingQuestions));
+            initExam();
+        }
+
+        function initExam() {
+            totalExamScore = activeExamQuestions.reduce((acc, q) => acc + q.score, 0);
+            userScore = 0;
+            currentQIndex = 0;
+            timeLeft = 2400;
+            showView('view-exam');
+            renderExamQuestion();
+            startTimer();
+        }
+
+        function renderExamQuestion() {
+            const q = activeExamQuestions[currentQIndex];
+            const progress = ((currentQIndex) / activeExamQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            let badge = q.type === 'radio' ? 'Нэг сонголт' : (q.type === 'matching' ? 'Харгалзуулах' : 'Олон сонголт');
+            document.getElementById('q-type-badge').innerText = badge;
+            document.getElementById('q-text').innerText = `${currentQIndex + 1}. ${q.text}`;
+
+            const container = document.getElementById('q-content-area');
+            container.innerHTML = '';
+
+            if (q.type === 'matching') {
+                // --- RENDER MATCHING ---
+                // 1. Зөв хариултуудыг цуглуулж холино (Shuffle right side)
+                const rightOptions = q.pairs.map((p, idx) => ({
+                    text: p.right,
+                    originalIndex: idx
+                }));
+                // Fisher-Yates Shuffle
+                for (let i = rightOptions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [rightOptions[i], rightOptions[j]] = [rightOptions[j], rightOptions[i]];
+                }
+
+                // 2. Зүүн талыг жагсааж, хажууд нь Dropdown үүсгэнэ
+                q.pairs.forEach((pair, idx) => {
+                    let dropdown = `<select name="match_ans_${idx}" class="border border-gray-300 p-2 rounded bg-white w-full">
+                                        <option value="-1">-- Сонгох --</option>`;
+                    rightOptions.forEach(opt => {
+                        dropdown += `<option value="${opt.originalIndex}">${opt.text}</option>`;
+                    });
+                    dropdown += `</select>`;
+
+                    container.innerHTML += `
+                        <div class="grid grid-cols-2 gap-4 items-center border-b border-gray-100 pb-2 mb-2">
+                            <div class="font-medium text-gray-700">${pair.left}</div>
+                            <div>${dropdown}</div>
+                        </div>
+                    `;
+                });
+
+            } else {
+                // --- RENDER CHOICE ---
+                const inputType = q.type === 'radio' ? 'radio' : 'checkbox';
+                q.options.forEach((opt, idx) => {
+                    container.innerHTML += `
+                        <label class="flex items-center bg-gray-50 p-4 rounded-lg cursor-pointer hover:bg-blue-50 border border-transparent hover:border-blue-200 transition">
+                            <input type="${inputType}" name="ans" value="${idx}" class="w-5 h-5 text-blue-600">
+                            <span class="ml-3 text-gray-700 font-medium">${opt}</span>
+                        </label>
+                    `;
+                });
+            }
+        }
+
+        function nextQuestion() {
+            const q = activeExamQuestions[currentQIndex];
+
+            if (q.type === 'matching') {
+                // --- SCORING MATCHING ---
+                // Зөв хос бүрт хувьчилж оноо өгнө. Жишээ: Нийт 5 оноо, 5 хос байвал 1 хос = 1 оноо.
+                const pairValue = q.score / q.pairs.length;
+                let correctMatches = 0;
+
+                q.pairs.forEach((_, idx) => {
+                    const select = document.querySelector(`select[name="match_ans_${idx}"]`);
+                    // Check if user selected the index that matches the current pair index
+                    if (select && parseInt(select.value) === idx) {
+                        correctMatches++;
+                    }
+                });
+                userScore += (correctMatches * pairValue);
+
+            } else {
+                // --- SCORING CHOICE ---
+                const inputs = document.querySelectorAll('input[name="ans"]:checked');
+                if (q.type === 'radio') {
+                    if (inputs.length > 0 && parseInt(inputs[0].value) === q.correct) {
+                        userScore += q.score;
+                    }
+                } else {
+                    const selected = Array.from(inputs).map(i => parseInt(i.value)).sort();
+                    const correctArr = Array.isArray(q.correct) ? q.correct.sort() : [q.correct];
+                    if (JSON.stringify(selected) === JSON.stringify(correctArr)) {
+                        userScore += q.score;
+                    }
+                }
+            }
+
+            currentQIndex++;
+            if (currentQIndex < activeExamQuestions.length) {
+                renderExamQuestion();
+            } else {
+                finishExam();
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let m = Math.floor(timeLeft / 60);
+                let s = timeLeft % 60;
+                document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                if (timeLeft <= 0) finishExam();
+            }, 1000);
+        }
+
+        function finishExam() {
+            clearInterval(timerInterval);
+            showView('view-result');
+
+            const percent = (userScore / totalExamScore) * 100 || 0;
+            let level = 'A1';
+            if (percent >= 90) level = 'C1 (Advanced)';
+            else if (percent >= 70) level = 'B2 (Upper Intermediate)';
+            else if (percent >= 50) level = 'B1 (Intermediate)';
+            else if (percent >= 30) level = 'A2 (Elementary)';
+
+            document.getElementById('result-level').innerText = level;
+            document.getElementById('result-score').innerText = `${userScore.toFixed(1)} / ${totalExamScore} (${Math.round(percent)}%)`;
+        }
+    </script>
+</body>
+
+</html>
